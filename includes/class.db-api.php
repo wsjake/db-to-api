@@ -217,6 +217,9 @@ class DB_API {
 				// May require a specified port number as per http://php.net/manual/en/ref.pdo-ibm.connection.php.
 				$dbh = new PDO( "ibm:DRIVER={IBM DB2 ODBC DRIVER};DATABASE={$db->name};HOSTNAME={$db->server};PROTOCOL=TCPIP;", $db->username, $db->password );
 			}
+			elseif ($db->type == 'ibmi') {
+				$dbh = new PDO( "odbc:DRIVER={IBM i Access ODBC Driver 64-bit};SYSTEM={$db->server};DATABASE={$db->name};HOSTNAME={$db->server};PROTOCOL=TCPIP;PORT={$db->port}", $db->username, $db->password );
+			}
 			elseif ( ($db->type == 'firebird') || ($db->type == 'interbase') ){
 				$dbh = new PDO( "firebird:dbname={$db->name};host={$db->server}" );
 			}
@@ -255,7 +258,12 @@ class DB_API {
 		
 			$dbh = &$this->connect( $db );
 			try { 
-				$stmt = $dbh->query( 'SHOW TABLES' );
+				if ($this->get_db( $db )->type == "ibmi") {
+					$stmt = $dbh->query( "SELECT TABLE_SCHEM ||'.'|| TABLE_NAME FROM SYSIBM.SQLTABLES" );
+				}
+				else {
+					$stmt = $dbh->query( 'SHOW TABLES' );
+				}
 			} catch( PDOException $e ) {
 				$this->error( $e );
 			}
